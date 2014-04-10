@@ -3,5 +3,9 @@
  simple download management.
 
 
+2014-4-10
+1. Add 2 necessary uses-permission to Manifest.
+2. Complete initial programming code for MySimpleDownloader and then improve it.
+
 2014-4-9
 1. Project created.

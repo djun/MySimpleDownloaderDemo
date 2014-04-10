@@ -1,3 +1,4 @@
+//(c)Copyright.2014.DJun.2014-4-9 Project Created.
 package com_dot_52djun.mysimpledownloaderdemo;
 
 import com_dot_52djun.mysimpledownloaderdemo.MySimpleDownloader.MySimpleDownloader;
