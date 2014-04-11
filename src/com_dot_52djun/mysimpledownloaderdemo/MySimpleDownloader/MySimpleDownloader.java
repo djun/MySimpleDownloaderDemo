@@ -389,7 +389,7 @@ public class MySimpleDownloader {
 	}
 
 	// listener for the downloader
-	interface MySimpleDownloaderListener {
+	public interface MySimpleDownloaderListener {
 		void onDownloadStarted(MySimpleDownloader downloader, long id);
 
 		void onDownloadCompleted(MySimpleDownloader downloader, long id);
