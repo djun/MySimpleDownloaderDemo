@@ -3,6 +3,13 @@
  simple download management.
 
 
+2014-4-11
+1. Add 2 new variables for recording file length and downloaded length in MySimpleDownloadFile.
+   When downloading, file length will be gotten and downloaded length will be updated now.
+2. When localFilePath is null in MySimpleDownloadFile, set it to cache folder.
+3. Create class MyDownloadManagerHelper for helping to use DownloadManager from OS.
+4. Change minSdkVersion to 9 in Manifest.
+
 2014-4-10
 1. Add 2 necessary uses-permission to Manifest.
 2. Complete initial programming code for MySimpleDownloader and then improve it.

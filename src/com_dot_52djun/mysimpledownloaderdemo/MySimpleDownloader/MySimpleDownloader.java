@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import android.annotation.SuppressLint;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 
@@ -199,6 +200,17 @@ public class MySimpleDownloader {
 					OutputStream output = null;
 
 					try {
+						if (dFile.localFilePath == null) {
+							// when localFilePath is null, set it to cache
+							// folder
+							String url = dFile.url;
+							String fileName = url.substring(url
+									.lastIndexOf("/") + 1);
+							dFile.localFilePath = Environment
+									.getDownloadCacheDirectory()
+									.getAbsolutePath()
+									+ "/" + fileName;
+						}
 						File file = new File(dFile.localFilePath);
 						// create parent directories
 						file.getParentFile().mkdirs();
@@ -223,7 +235,12 @@ public class MySimpleDownloader {
 							URL url = new URL(dFile.url);
 							conn = (HttpURLConnection) url.openConnection();
 							conn.setReadTimeout(READ_TIMEOUT);
+							conn.connect();
 							input = conn.getInputStream();
+
+							// get remote file length
+							dFile.setFileLength(conn.getContentLength());
+							dFile.setDownloadedLength(0);
 
 							boolean interrupted = false;
 
@@ -234,6 +251,12 @@ public class MySimpleDownloader {
 								// write data to output
 								output.write(buffer);
 
+								// update downloaded length info
+								int d = dFile.getDownloadedLength();
+								d = Math.min(d + buffer.length,
+										dFile.fileLength);
+								dFile.setDownloadedLength(d);
+
 								// send downloading message to handler
 								if (this.handler != null) {
 									this.handler
@@ -243,9 +266,6 @@ public class MySimpleDownloader {
 													dFile == null ? MySimpleDownloadFile.INVALID_ID
 															: dFile.id);
 								}
-
-								// TODO how to get the whole file length and
-								// downloaded file length?
 							}
 							output.flush();
 
@@ -388,6 +408,8 @@ public class MySimpleDownloader {
 		private String title;
 		private String description;
 
+		private int fileLength = 0, downloadedLength = 0;
+
 		public static final long INVALID_ID = -1;
 
 		public MySimpleDownloadFile(long id, String url) {
@@ -443,6 +465,22 @@ public class MySimpleDownloader {
 
 		public void setDescription(String description) {
 			this.description = description;
+		}
+
+		public int getFileLength() {
+			return fileLength;
+		}
+
+		public void setFileLength(int fileLength) {
+			this.fileLength = fileLength;
+		}
+
+		public int getDownloadedLength() {
+			return downloadedLength;
+		}
+
+		public void setDownloadedLength(int downloadedLength) {
+			this.downloadedLength = downloadedLength;
 		}
 
 	}
