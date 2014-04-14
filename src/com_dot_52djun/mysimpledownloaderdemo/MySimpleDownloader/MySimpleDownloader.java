@@ -87,7 +87,7 @@ public class MySimpleDownloader {
 	// start all download task
 	public synchronized void startAllDownloadTasks(boolean overWrite) {
 		for (MySimpleDownloadFile dFile : fileList) {
-			startDownloadTask(dFile.id, overWrite);
+			startDownloadTask(dFile.getId(), overWrite);
 		}
 	}
 
@@ -102,7 +102,7 @@ public class MySimpleDownloader {
 	// cancel all download task
 	public synchronized void cancelAllDownloadTasks() {
 		for (MySimpleDownloadFile dFile : fileList) {
-			cancelDownloadTask(dFile.id);
+			cancelDownloadTask(dFile.getId());
 		}
 	}
 
@@ -127,7 +127,7 @@ public class MySimpleDownloader {
 		MySimpleDownloadFile dFile = new MySimpleDownloadFile(idCounter++, url,
 				localFilePath);
 		fileList.add(dFile);
-		fileMap.put(dFile.id, dFile);
+		fileMap.put(dFile.getId(), dFile);
 
 		return dFile;
 	}
@@ -164,6 +164,10 @@ public class MySimpleDownloader {
 
 		private static final int READ_TIMEOUT = 9999;
 		private static final int CACHE_SIZE = 4 * 1024;
+		private static final long UI_UPDATE_DELAY = 500L;
+
+		private long lastUIUpdateTime = 0;
+		private int currentDownloadedLength = 0;
 
 		public MySimpleDownloadThread(MySimpleDownloadFile file,
 				MySimpleDownloader downloader, boolean overWrite) {
@@ -182,16 +186,17 @@ public class MySimpleDownloader {
 			// send download started message to handler
 			if (this.handler != null) {
 				this.handler.sendMessage(
-						MySimpleDownloaderHandler.DOWNLOAD_STARTED, downloader,
-						dFile == null ? MySimpleDownloadFile.INVALID_ID
-								: dFile.id);
+						MySimpleDownloaderHandler.DOWNLOAD_STARTED,
+						downloader,
+						dFile == null ? MySimpleDownloadFile.INVALID_ID : dFile
+								.getId());
 			}
 
 			boolean canceled = false;
 			try {
 				// check if necessary infomation not found in the
 				// MySimpleDownloadFile
-				if (dFile == null || dFile.url == null) {
+				if (dFile == null || dFile.getUrl() == null) {
 					canceled = true;
 					System.out.println("download file info null!");// debug
 				} else {
@@ -200,18 +205,18 @@ public class MySimpleDownloader {
 					OutputStream output = null;
 
 					try {
-						if (dFile.localFilePath == null) {
+						if (dFile.getLocalFilePath() == null) {
 							// when localFilePath is null, set it to cache
 							// folder
-							String url = dFile.url;
+							String url = dFile.getUrl();
 							String fileName = url.substring(url
 									.lastIndexOf("/") + 1);
-							dFile.localFilePath = Environment
+							dFile.setLocalFilePath(Environment
 									.getDownloadCacheDirectory()
 									.getAbsolutePath()
-									+ "/" + fileName;
+									+ "/" + fileName);
 						}
-						File file = new File(dFile.localFilePath);
+						File file = new File(dFile.getLocalFilePath());
 						// create parent directories
 						file.getParentFile().mkdirs();
 						// check if over write this file
@@ -232,7 +237,7 @@ public class MySimpleDownloader {
 						if (overwritten) {
 							file.createNewFile();
 
-							URL url = new URL(dFile.url);
+							URL url = new URL(dFile.getUrl());
 							conn = (HttpURLConnection) url.openConnection();
 							conn.setReadTimeout(READ_TIMEOUT);
 							conn.connect();
@@ -246,25 +251,46 @@ public class MySimpleDownloader {
 
 							output = new FileOutputStream(file);
 							byte[] buffer = new byte[CACHE_SIZE]; // cache
+							lastUIUpdateTime = System.currentTimeMillis();
+							currentDownloadedLength = 0;
 							while (input.read(buffer) != -1
 									&& !(interrupted = isInterrupted())) {
 								// write data to output
 								output.write(buffer);
 
+								// update download speed
+								currentDownloadedLength += Math.min(
+										dFile.getFileLength()
+												- dFile.getDownloadedLength(),
+										CACHE_SIZE);
+
 								// update downloaded length info
 								int d = dFile.getDownloadedLength();
 								d = Math.min(d + buffer.length,
-										dFile.fileLength);
+										dFile.getFileLength());
 								dFile.setDownloadedLength(d);
 
-								// send downloading message to handler
-								if (this.handler != null) {
-									this.handler
-											.sendMessage(
-													MySimpleDownloaderHandler.DOWNLOADING,
-													downloader,
-													dFile == null ? MySimpleDownloadFile.INVALID_ID
-															: dFile.id);
+								// send downloading message to handler (with
+								// delay)
+								long currentTime = System.currentTimeMillis();
+								if (currentTime - lastUIUpdateTime >= UI_UPDATE_DELAY) {
+									// calculate the average download speed
+									double avgSpeed = currentDownloadedLength
+											* 1.0f
+											/ (currentTime - lastUIUpdateTime);
+									dFile.setLastAvgDownloadSpeed(avgSpeed);
+
+									// send message
+									if (this.handler != null) {
+										this.handler
+												.sendMessage(
+														MySimpleDownloaderHandler.DOWNLOADING,
+														downloader,
+														dFile == null ? MySimpleDownloadFile.INVALID_ID
+																: dFile.getId());
+									}
+
+									lastUIUpdateTime = currentTime;
 								}
 							}
 							output.flush();
@@ -275,13 +301,14 @@ public class MySimpleDownloader {
 						canceled = true;
 
 						e.printStackTrace();
-						System.out
-								.println("malformed url error!: " + dFile.url);// debug
+						System.out.println("malformed url error!: "
+								+ dFile.getUrl());// debug
 					} catch (IOException e) {
 						canceled = true;
 
 						e.printStackTrace();
-						System.out.println("io error!: " + dFile.localFilePath);// debug
+						System.out.println("io error!: "
+								+ dFile.getLocalFilePath());// debug
 					} finally {
 						// close all streams and connections
 						try {
@@ -306,7 +333,7 @@ public class MySimpleDownloader {
 							: MySimpleDownloaderHandler.DOWNLOAD_COMPLETED;
 					this.handler.sendMessage(messageType, downloader,
 							dFile == null ? MySimpleDownloadFile.INVALID_ID
-									: dFile.id);
+									: dFile.getId());
 				}
 			}
 		}
@@ -409,6 +436,7 @@ public class MySimpleDownloader {
 		private String description;
 
 		private int fileLength = 0, downloadedLength = 0;
+		private double lastAvgDownloadSpeed = 0;
 
 		public static final long INVALID_ID = -1;
 
@@ -481,6 +509,14 @@ public class MySimpleDownloader {
 
 		public void setDownloadedLength(int downloadedLength) {
 			this.downloadedLength = downloadedLength;
+		}
+
+		public double getLastAvgDownloadSpeed() {
+			return lastAvgDownloadSpeed;
+		}
+
+		public void setLastAvgDownloadSpeed(double lastAvgDownloadSpeed) {
+			this.lastAvgDownloadSpeed = lastAvgDownloadSpeed;
 		}
 
 	}

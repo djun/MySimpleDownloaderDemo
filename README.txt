@@ -3,6 +3,11 @@
  simple download management.
 
 
+2014-4-14
+1. MySimpleDownloader improved, add delay time between twice UI update, and add record of last average download speed.
+2. Update MyDownloadManagerHelper code.
+3. Minor bug fix.
+
 2014-4-11
 1. Add 2 new variables for recording file length and downloaded length in MySimpleDownloadFile.
    When downloading, file length will be gotten and downloaded length will be updated now.
