@@ -6,8 +6,6 @@ import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com_dot_52djun.mysimpledownloaderdemo.MySimpleDownloader.MySimpleDownloader.MySimpleDownloadFile;
-
 import android.annotation.SuppressLint;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;

@@ -1,7 +1,12 @@
-[MySimpleDownloader Demo] - DJun, 2014.3.20
+[MySimpleDownloader Demo] - DJun, 2014.4.9
 	This demo is created by DJun, which can provide a simple http downloader with
  simple download management.
 
+
+2014-7-31
+1. Add a class called DownUtil (renamed to MyMultiThreadDownloader) original from CrazyIT.
+   It's for multi-thread file download. I will modify it to adapt to MySimpleDownloader.
+2. Add a class called MySingleThreadDownloader copied from MultiThreadDownloader.
 
 2014-4-14
 1. MySimpleDownloader improved, add delay time between twice UI update, and add record of last average download speed.
