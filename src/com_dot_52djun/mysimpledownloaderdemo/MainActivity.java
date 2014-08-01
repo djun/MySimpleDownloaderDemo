@@ -9,14 +9,12 @@ import android.view.Menu;
 
 public class MainActivity extends Activity {
 
-	private MySimpleDownloader downloader;
+	private MySimpleDownloader downloader = new MySimpleDownloader();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-
-		downloader = MySimpleDownloader.getPublicDownloader();
 	}
 
 	@Override

@@ -10,6 +10,7 @@ public class MySimpleDownloadFile {
 	private String description;
 
 	private int fileLength = 0, downloadedLength = 0;
+	private double completedRate = 0;
 	private double lastAvgDownloadSpeed = 0;
 
 	public static final long INVALID_ID = -1;
@@ -33,7 +34,7 @@ public class MySimpleDownloadFile {
 		return id;
 	}
 
-	public void setId(long id) {
+	public synchronized void setId(long id) {
 		this.id = id;
 	}
 
@@ -41,7 +42,7 @@ public class MySimpleDownloadFile {
 		return url;
 	}
 
-	public void setUrl(String url) {
+	public synchronized void setUrl(String url) {
 		this.url = url;
 	}
 
@@ -49,7 +50,7 @@ public class MySimpleDownloadFile {
 		return localFilePath;
 	}
 
-	public void setLocalFilePath(String localFilePath) {
+	public synchronized void setLocalFilePath(String localFilePath) {
 		this.localFilePath = localFilePath;
 	}
 
@@ -57,7 +58,7 @@ public class MySimpleDownloadFile {
 		return title;
 	}
 
-	public void setTitle(String title) {
+	public synchronized void setTitle(String title) {
 		this.title = title;
 	}
 
@@ -65,7 +66,7 @@ public class MySimpleDownloadFile {
 		return description;
 	}
 
-	public void setDescription(String description) {
+	public synchronized void setDescription(String description) {
 		this.description = description;
 	}
 
@@ -73,7 +74,7 @@ public class MySimpleDownloadFile {
 		return fileLength;
 	}
 
-	public void setFileLength(int fileLength) {
+	public synchronized void setFileLength(int fileLength) {
 		this.fileLength = fileLength;
 	}
 
@@ -81,15 +82,23 @@ public class MySimpleDownloadFile {
 		return downloadedLength;
 	}
 
-	public void setDownloadedLength(int downloadedLength) {
+	public synchronized void setDownloadedLength(int downloadedLength) {
 		this.downloadedLength = downloadedLength;
+	}
+
+	public double getCompletedRate() {
+		return completedRate;
+	}
+
+	public synchronized void setCompletedRate(double completedRate) {
+		this.completedRate = completedRate;
 	}
 
 	public double getLastAvgDownloadSpeed() {
 		return lastAvgDownloadSpeed;
 	}
 
-	public void setLastAvgDownloadSpeed(double lastAvgDownloadSpeed) {
+	public synchronized void setLastAvgDownloadSpeed(double lastAvgDownloadSpeed) {
 		this.lastAvgDownloadSpeed = lastAvgDownloadSpeed;
 	}
 

@@ -8,6 +8,7 @@ import java.net.URL;
 public class MyMultiThreadDownloader {
 
 	public static int DEFAULT_THREAD_NUM = 2;
+	public static final long SPEED_UPDATE_DELAY = MultiDownloadThread.SPEED_UPDATE_DELAY;
 
 	private MySimpleDownloadFile myFile;
 	private int threadNum;
@@ -43,6 +44,10 @@ public class MyMultiThreadDownloader {
 
 	public MySimpleDownloadFile getMySimpleDownloadFile() {
 		return this.myFile;
+	}
+
+	public boolean isInterrupted() {
+		return threads[0].isInterrupted();
 	}
 
 	// start the download process!
@@ -111,6 +116,7 @@ public class MyMultiThreadDownloader {
 
 		// update MySimpleDownloadFile
 		myFile.setDownloadedLength(sumSize);
+		myFile.setCompletedRate(rate);
 
 		return rate;
 	}

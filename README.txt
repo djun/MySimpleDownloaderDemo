@@ -3,6 +3,10 @@
  simple download management ("multi-thread" added in 2014.7.31) .
 
 
+2014-8-1
+1. Improve MySimpleDownloadFile & MyMultiThreadDownloader.
+2. Fix MySimpleDownloader.
+
 2014-7-31
 1. Add a class called DownUtil (renamed to MyMultiThreadDownloader) original from CrazyIT.
    It's for multi-thread file download. I will modify it to adapt to MySimpleDownloader.

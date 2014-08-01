@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.os.AsyncTask;
 
 @SuppressLint("HandlerLeak")
@@ -41,47 +40,30 @@ public class MySimpleDownloader {
 
 	// add download task
 	public synchronized long addDownloadTask(String url, String localFilePath) {
-		return createDownloadFile(url, localFilePath).getId();
+		return createDownloadThread(url, localFilePath).getId();
 	}
 
 	// start download task
 	public synchronized void startDownloadTask(long id) {
-		startDownloadTask(id, false);
-	}
-
-	// start download task
-	public synchronized void startDownloadTask(long id, boolean overWrite) {
-		MySimpleDownloadThread t = taskMap.get(id);
-		if (t != null && !t.isInterrupted()) {
-			return;
-		}
-
-		MySimpleDownloadFile dFile = fileMap.get(id);
-		if (dFile != null) {
-			MySimpleDownloadThread thread = new MySimpleDownloadThread(dFile,
-					this, overWrite);
-			threadMap.put(id, thread);
-
-			thread.start();
+		MySimpleDownloaderAsyncTask t = taskMap.get(id);
+		if (t != null) {
+			t.execute();
 		}
 	}
 
 	// start all download task
 	public synchronized void startAllDownloadTasks() {
-		startAllDownloadTasks(false);
-	}
-
-	// start all download task
-	public synchronized void startAllDownloadTasks(boolean overWrite) {
 		for (MySimpleDownloadFile dFile : fileList) {
-			startDownloadTask(dFile.getId(), overWrite);
+			startDownloadTask(dFile.getId());
 		}
 	}
 
 	// cancel download task
 	public synchronized void cancelDownloadTask(long id) {
 		MySimpleDownloaderAsyncTask t = taskMap.get(id);
-		t.cancel(true); // TODO testing
+		if (t != null) {
+			t.cancel(true); // TODO testing
+		}
 	}
 
 	// cancel all download task
@@ -107,22 +89,15 @@ public class MySimpleDownloader {
 	}
 
 	// private method for create download file and put it into the map
-	private MySimpleDownloadFile createDownloadFile(String url,
+	private MySimpleDownloadFile createDownloadThread(String url,
 			String localFilePath) {
-		MySimpleDownloadFile dFile = new MySimpleDownloadFile(idCounter++, url,
-				localFilePath);
-		fileList.add(dFile);
-		fileMap.put(dFile.getId(), dFile);
+		MySimpleDownloaderAsyncTask t = new MySimpleDownloaderAsyncTask(
+				idCounter++, url, localFilePath, listener, this);
+		MySimpleDownloadFile f = t.getMyFile();
+		fileList.add(f);
+		fileMap.put(f.getId(), f);
 
-		return dFile;
-	}
-
-	// return a public downloader used for global
-	public static MySimpleDownloader getPublicDownloader() {
-		if (publicDownloader == null) {
-			publicDownloader = new MySimpleDownloader();
-		}
-		return publicDownloader;
+		return f;
 	}
 
 	public MySimpleDownloaderListener getListener() {
@@ -134,46 +109,83 @@ public class MySimpleDownloader {
 	}
 
 	public class MySimpleDownloaderAsyncTask extends
-			AsyncTask<Object, Double, MySimpleDownloadFile> {
+			AsyncTask<Void, Double, Void> {
 
-		private Object[] params;
 		private MySimpleDownloaderListener listener;
 		private MySimpleDownloader downloader;
+
+		private MyMultiThreadDownloader thread;
 
 		public MySimpleDownloaderAsyncTask(long id, String url,
 				String localFilePath, MySimpleDownloaderListener listener,
 				MySimpleDownloader downloader) {
-			this.params = new Object[] { id, url, localFilePath };
 			this.listener = listener;
 			this.downloader = downloader;
+
+			this.thread = new MyMultiThreadDownloader(id, url, localFilePath);
 		}
 
-		public void execute() {
-			this.execute(params);
+		public MySimpleDownloadFile getMyFile() {
+			return thread.getMySimpleDownloadFile();
 		}
+
+		// Void可以不用专门写一个这个
+		// public void execute() {
+		// this.execute(..);
+		// }
 
 		@Override
 		protected void onPreExecute() {
 			if (listener != null) {
-				listener.onDownloadStarted(downloader, id);
+				listener.onDownloadStarted(downloader, getMyFile());
 			}
 		}
 
 		@Override
-		protected MySimpleDownloadFile doInBackground(Object... params) {
+		protected Void doInBackground(Void... params) {
+			try {
+				if (thread != null) {
+					thread.download();
+
+					double rate = 0;
+					while (rate < 1f || !thread.isInterrupted()) {
+						if (thread != null) {
+							rate = thread.getCompletedRate();
+						}
+						publishProgress(rate);
+
+						Thread.sleep(MyMultiThreadDownloader.SPEED_UPDATE_DELAY);
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
 			return null;
 		}
 
 		@Override
 		protected void onProgressUpdate(Double... values) {
-			// TODO Auto-generated method stub
-			super.onProgressUpdate(values);
+			System.out.println("file:" + getMyFile().getId() + ",rate="
+					+ values[0]);// debug
+
+			if (listener != null) {
+				listener.onDownloading(downloader, getMyFile());
+			}
 		}
 
 		@Override
-		protected void onPostExecute(MySimpleDownloadFile result) {
-			// TODO Auto-generated method stub
-			super.onPostExecute(result);
+		protected void onPostExecute(Void result) {
+			if (listener != null) {
+				listener.onDownloadCompleted(downloader, getMyFile());
+			}
+		}
+
+		@Override
+		protected void onCancelled() {
+			if (listener != null) {
+				listener.onDownloadCanceled(downloader, getMyFile());
+			}
 		}
 
 	}
